@@ -1,22 +1,21 @@
 package com.patrones.server_rest.controller;
 
-import com.patrones.server_rest.domain.Factura;
-import com.patrones.server_rest.domain.adapter.AdaptadorFactura;
-import com.patrones.server_rest.domain.adapter.FacturaJson;
+import com.patrones.server_rest.dto.Factura;
+import com.patrones.server_rest.services.ServicioFactura;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class ControllerFactura {
 
+    @Autowired
+    ServicioFactura servicioFactura;
 
     @PostMapping("/factura")
-    public Factura getFactura(@RequestBody Factura factura) {
-        FacturaJson facturaJson = new FacturaJson();
-        AdaptadorFactura adaptadorFactura =new AdaptadorFactura(facturaJson);
-        adaptadorFactura.convertirAXml();
+    public Factura generarFactura(@RequestBody Factura factura) {
+        servicioFactura.generarFactura(factura);
         return factura;
     }
 }

@@ -1,5 +1,8 @@
-package com.patrones.server_rest.domain;
+package com.patrones.server_rest.dto;
 
+import com.patrones.server_rest.domain.Emisor;
+import com.patrones.server_rest.domain.Producto;
+import com.patrones.server_rest.domain.Receptor;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
