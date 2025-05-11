@@ -1,20 +1,34 @@
 package com.patrones.server_rest.domain.adapter;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.patrones.server_rest.dto.Factura;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestTemplate;
 
 @Getter
 @Setter
 @AllArgsConstructor
-@NoArgsConstructor
 public class FacturaJson extends Factura implements IJson {
     private String firmaDigital;
+    @JsonIgnore
+    private String factura;
+    @JsonIgnore
+    private String facturaXmlResponse;
+    @JsonIgnore
+    private RestTemplate restTemplate;
+
+    public FacturaJson() {
+        this.restTemplate = new RestTemplate();
+    }
+
     @Override
     public FacturaXml convertirJson(Factura factura) {
-        String xml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:fac=\"http://example.com/factura\">\n" +
+        StringBuilder xml = new StringBuilder("<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:fac=\"http://example.com/factura\">\n" +
                 "   <soapenv:Header/>\n" +
                 "   <soapenv:Body>\n" +
                 "      <fac:facturaRequest>\n" +
@@ -30,24 +44,25 @@ public class FacturaJson extends Factura implements IJson {
                 "         </fac:receptor>\n" +
                 "         <fac:fechaEmision>" + factura.getFechaEmision() + "</fac:fechaEmision>\n" +
                 "         <fac:numeroFactura>" + factura.getNumeroFactura() + "</fac:numeroFactura>\n" +
-                "         <fac:productos>\n";
+                "         <fac:productos>\n");
 
         for (var producto : factura.getProductos()) {
-            xml += "            <fac:producto>\n" +
-                    "               <fac:descripcion>" + producto.getDescripcion() + "</fac:descripcion>\n" +
-                    "               <fac:cantidad>" + producto.getCantidad() + "</fac:cantidad>\n" +
-                    "               <fac:precioUnitario>" + producto.getPrecioUnitario() + "</fac:precioUnitario>\n" +
-                    "               <fac:totalProducto>" + producto.getTotalProducto() + "</fac:totalProducto>\n" +
-                    "            </fac:producto>\n";
+            xml.append("            <fac:producto>\n" + "               <fac:descripcion>").append(producto.getDescripcion()).append("</fac:descripcion>\n").append("               <fac:cantidad>").append(producto.getCantidad()).append("</fac:cantidad>\n").append("               <fac:precioUnitario>").append(producto.getPrecioUnitario()).append("</fac:precioUnitario>\n").append("               <fac:totalProducto>").append(producto.getTotalProducto()).append("</fac:totalProducto>\n").append("            </fac:producto>\n");
         }
 
-        xml += "         </fac:productos>\n" +
-                "         <fac:total>" + factura.getTotal() + "</fac:total>\n" +
-                "      </fac:facturaRequest>\n" +
-                "   </soapenv:Body>\n" +
-                "</soapenv:Envelope>";
+        xml.append("         </fac:productos>\n" + "         <fac:total>").append(factura.getTotal()).append("</fac:total>\n").append("      </fac:facturaRequest>\n").append("   </soapenv:Body>\n").append("</soapenv:Envelope>");
+        this.factura = xml.toString();
+        return new FacturaXml(xml.toString());
+    }
 
-        System.out.println("CONVIRTIENDO FACTURA JSON A XML...");
-        return new FacturaXml(xml);
+    @Override
+    public void enviarFactura() {
+        //ENVIA FACTURA AL SERVICIO SOAP EN FORMATO XML Y DEVUELVE UN XML "FIRMADO DIGITALMENTE"
+        String soapEndpointUrl = "http://localhost:8080/ws";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "text/xml;charset=UTF-8");
+        org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(this.factura, headers);
+        this.facturaXmlResponse = restTemplate.exchange(soapEndpointUrl, HttpMethod.POST, entity, String.class).getBody();
+        System.out.println("FIRMANDO DIGITALMENTE");
     }
 }
